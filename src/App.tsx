@@ -1,6 +1,7 @@
 import { motion } from "motion/react"
 import { MouseEvent, useEffect, useRef, useState } from "react";
 import { images } from "./constants/images";
+import { Credits } from "./components/credits";
 
 function App() {
   const CONTAINER_SIZE = 384;
@@ -49,6 +50,7 @@ function App() {
       onPointerUp={handlePointerUp}
       className="w-full h-dvh select-none overflow-hidden flex items-center justify-center bg-white"
     >
+      <Credits />
       {selectedImage != null && (
         <motion.div 
           initial={{ opacity: 0 }}

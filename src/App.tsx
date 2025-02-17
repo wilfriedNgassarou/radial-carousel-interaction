@@ -1,16 +1,53 @@
 import { motion } from "motion/react"
-import { useState } from "react";
+import { MouseEvent, useEffect, useRef, useState } from "react";
 import { images } from "./constants/images";
 
 function App() {
-  const [selectedImage, setSelectedImage] = useState<typeof images[number] | null>(null)
-
   const CONTAINER_SIZE = 384;
   const ITEM_SIZE = 68;
 
+  const [selectedImage, setSelectedImage] = useState<typeof images[number] | null>(null)
+  const [angle, setAngle] = useState(0) ;
+
+  const [centerCoords, setCenterCoords] = useState({ x: 0, y: 0 })
+  const wheelRef = useRef<HTMLDivElement>(null)
+  
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handlePointerUp = () => setIsDragging(false)
+  const handlePointerDown = () => setIsDragging(true)
+
+  function handlePointerMove(e: MouseEvent) {
+    if(!isDragging) return 
+    
+    const x = e.clientX - centerCoords.x
+    const y = e.clientY - centerCoords.y
+
+    const angle = Math.atan2(y, x);
+    const angleInDegree = angle * (180 / Math.PI);
+
+    const normalizedAngle = (angleInDegree + 360) % 360
+
+    setAngle(angle + normalizedAngle)    
+  }
+  
+  useEffect(() => {
+    if(!wheelRef.current) return 
+    
+    const { left, top, width, height } = wheelRef.current.getBoundingClientRect()
+    
+    const x = left + (width / 2)
+    const y = top + (height / 2)
+
+    setCenterCoords({ x, y })
+  }, [])
+
+
   return (
-    <section 
-      className="w-full h-dvh select-none flex items-center justify-center bg-white"
+    <section
+      onPointerMove={handlePointerMove} 
+      onPointerUp={handlePointerUp}
+      className="w-full h-dvh select-none overflow-hidden flex items-center justify-center bg-white"
     >
       {selectedImage != null && (
         <motion.div 
@@ -44,47 +81,53 @@ function App() {
               strokeWidth="2"
               viewBox="0 0 24 24"
             >
-              <path d="M18 6 6 18M6 6l12 12"></path>
+              <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </motion.div>
         </motion.div>
       )}
       <motion.div
-        transition={{ type: 'tween', duration: .3, ease: 'easeInOut' }}
-        className="rounded-full flex items-center justify-center relative"
-        style={{ width: CONTAINER_SIZE, height: CONTAINER_SIZE }}
+        animate={{ rotate: angle }}
+        transition={{ duration: 0 }}
       >
-        {images.map((item, index) => (
-          <motion.div
-            key={item.id}
-            style={{ 
-              width: ITEM_SIZE, 
-              height: ITEM_SIZE,
-              transform: `translate( ${Math.sin(item.angle) * ((CONTAINER_SIZE / 2) - (ITEM_SIZE / 2))}px, ${Math.cos(item.angle) * ((CONTAINER_SIZE / 2) - (ITEM_SIZE / 2))}px)`
-            }}
-            className="absolute cursor-pointer"
-          >
-            <motion.div
-              layoutId={item.id}
-              transition={{ type: 'spring', duration: .7, bounce: .35 }}
-              className="w-full h-full"
-              style={{ boxShadow: 'none', borderRadius: 12 }}
-              onClick={() => setSelectedImage(item)}
+        <div
+          ref={wheelRef}
+          className="rounded-full flex items-center justify-center relative"
+          style={{ width: CONTAINER_SIZE, height: CONTAINER_SIZE }}
+          onPointerDown={handlePointerDown}
+        >
+          {images.map((item, index) => (
+            <div
+              key={item.id}
+              style={{ 
+                width: ITEM_SIZE, 
+                height: ITEM_SIZE,
+                transform: `translate( ${Math.sin(item.angle) * ((CONTAINER_SIZE / 2) - (ITEM_SIZE / 2))}px, ${Math.cos(item.angle) * ((CONTAINER_SIZE / 2) - (ITEM_SIZE / 2))}px)`
+              }}
+              className="absolute cursor-pointer"
             >
               <motion.div
-                initial={{ rotate: (360 / 12) * -index}}
-                className="w-full h-full rounded-xl overflow-hidden border-4 border-white"
-                style={{ boxShadow: '0px 0px 10px rgba(0, 0, 0, .2)' }}
+                layoutId={item.id}
+                transition={{ type: 'spring', duration: .7, bounce: .35 }}
+                className="w-full h-full"
+                style={{ boxShadow: 'none', borderRadius: 12 }}
+                onClick={() => setSelectedImage(item)}
               >
-                <img
-                  src={item.src}
-                  className="w-full h-full object-cover"
-                  alt="Image" 
-                />
+                <motion.div
+                  initial={{ rotate: (360 / 12) * -index}}
+                  className="w-full h-full rounded-xl overflow-hidden border-4 border-white"
+                  style={{ boxShadow: '0px 0px 10px rgba(0, 0, 0, .2)' }}
+                >
+                  <img
+                    src={item.src}
+                    className="w-full h-full object-cover"
+                    alt="Image" 
+                  />
+                </motion.div>
               </motion.div>
-            </motion.div>
-          </motion.div>
-        ))}
+            </div>
+          ))}
+        </div>
       </motion.div>
     </section>
   )
